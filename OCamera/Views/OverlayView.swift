@@ -20,7 +20,7 @@ class OverlayView: UIView {
                                                                 y: self.bounds.maxY-110,
                                                             width: self.width,
                                                            height: 110))
-        mode.addTarget(self, action: #selector(modeChanged(_:)), for: .valueChanged)
+        mode.addTarget(self, action: #selector(cameraModeChanged(_:)), for: .valueChanged)
         return mode
     }()
     
@@ -55,7 +55,7 @@ class OverlayView: UIView {
 
 extension OverlayView {
     
-    @objc private func modeChanged(_ sender: CameraModeView) {
+    @objc private func cameraModeChanged(_ sender: CameraModeView) {
         let photoEnabled: Bool = sender.cameraMode == .photo
         let toColor: UIColor   = photoEnabled ? .black : UIColor(white: 0.0, alpha: 0.5)
         let toOpacity: CGFloat = photoEnabled ? 0.0 : 1.0

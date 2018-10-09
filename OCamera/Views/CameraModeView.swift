@@ -18,8 +18,8 @@ class CameraModeView: UIControl {
     var thumbnail: UIImage? {
         willSet {
             self.thumbnailButton.setImage(newValue, for: .normal)
-            //self.thumbnailButton.layer.borderColor = UIColor.white.cgColor
-            //self.thumbnailButton.layer.borderWidth = 1.0
+            self.thumbnailButton.layer.borderColor = UIColor.white.cgColor
+            self.thumbnailButton.layer.borderWidth = 1.0
         }
     }
     

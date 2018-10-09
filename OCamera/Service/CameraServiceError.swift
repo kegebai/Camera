@@ -8,6 +8,18 @@
 
 import Foundation
 
+enum CameraServiceErrorCode: Int {
+    case code1 = 1001 // default 1001
+    case code2
+    case code3
+}
+
+enum CameraServiceErrorReason: String {
+    case deviceConfigurationFailed // 1001
+    case mediaCaptureFailed        // 1002
+    case assetLibraryWriteFailed   // 1003
+}
+
 struct CameraServiceError: Error {
     var code   : Int    = 0
     var reason : String = ""
@@ -18,9 +30,9 @@ struct CameraServiceError: Error {
         get { return self.desc() }
     }
     
-    init(code: Int, reason: String, content: String? = "") {
-        self.code    = code
-        self.reason  = reason
+    init(code: CameraServiceErrorCode, reason: CameraServiceErrorReason, content: String? = "") {
+        self.code    = code.rawValue
+        self.reason  = reason.rawValue
         self.content = content
     }
 }

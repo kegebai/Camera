@@ -12,17 +12,19 @@ import AVFoundation
 
 class CameraViewModel {
     var cameraMode: CameraMode = .video
+    //
+    var updateThumbnail: ((_ image: UIImage?) -> ())?
     
-    private(set) var cameraService: CameraService = CameraService()
-    
+    private(set) var cameraService: CameraService!
     private var timer: Timer!
-    private var thumbnail: UIImage?
     
     init() {
+        self.cameraService = CameraService()
+        self.cameraService.delegate = self
+        
         NotificationCenter.observe(self,
                                    notification: .GeneraterThumbnail,
                                    selector: #selector(generateThumbnail(_:)))
-        self.cameraService.delegate = self
     }
 }
 
@@ -71,13 +73,8 @@ extension CameraViewModel {
         
         return tempString
     }
-
-    func updateThumbnail() -> UIImage? { return self.thumbnail }
-}
-
-extension CameraViewModel {
     
     @objc private func generateThumbnail(_ noti: Notification) {
-        self.thumbnail = noti.object as? UIImage
+        self.updateThumbnail?(noti.object as? UIImage)
     }
 }

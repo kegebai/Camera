@@ -23,6 +23,7 @@ class CaptureButton: UIButton {
     
     private var circleLayer: CALayer = CALayer()
     
+    //
     convenience init(withMode: CameraMode? = .video) {
         self.init(frame: DEFAULT_FRAME)
         
@@ -80,8 +81,7 @@ class CaptureButton: UIButton {
 
 extension CaptureButton {
     static func captureButton() -> CaptureButton {
-        //return self.captureButtonWithMode(.photo)
-        return CaptureButton()
+        return self.captureButtonWithMode(.video)
     }
     
     class func captureButtonWithMode(_ mode: CameraMode) -> CaptureButton {

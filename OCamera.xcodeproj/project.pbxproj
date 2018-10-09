@@ -230,8 +230,8 @@
 			isa = PBXGroup;
 			children = (
 				82D222612158CF5E002332B0 /* NotificationService.swift */,
-				82D835762156D52C00E2E27D /* CameraService.swift */,
 				82E75AD4215CB9D200316C11 /* CameraServiceError.swift */,
+				82D835762156D52C00E2E27D /* CameraService.swift */,
 				82D602A0215F38BE003E0740 /* ImageCaptureService.swift */,
 				82D83581215771F900E2E27D /* VideoRecordService.swift */,
 				82D2225F2158C739002332B0 /* WriterService.swift */,

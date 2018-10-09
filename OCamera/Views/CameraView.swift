@@ -57,7 +57,10 @@ extension CameraView {
         self.previewView.focusEnabled  = self.viewModel.cameraService.cameraSupportFocus
         
         self.overlayView.statusBar.elapsedTimeLabel.text = self.viewModel.updateTimeDisplay()
-        self.overlayView.modeBar.thumbnail = self.viewModel.updateThumbnail()
+        
+        self.viewModel.updateThumbnail = { [weak self] image in
+            self?.overlayView.modeBar.thumbnail = image
+        }
     }
 }
 

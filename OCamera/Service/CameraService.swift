@@ -389,7 +389,7 @@ extension CameraService {
     
     func postThumbnailNotifyWith(image: UIImage) {
         DispatchQueue.main.async {
-            NotificationCenter.post(notification: .GeneraterThumbnail)
+            NotificationCenter.post(notification: .GeneraterThumbnail, object: image)
         }
     }
     
