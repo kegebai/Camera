@@ -56,8 +56,10 @@ extension CameraView {
         self.previewView.exposeEnabled = self.viewModel.cameraService.cameraSupportExpose
         self.previewView.focusEnabled  = self.viewModel.cameraService.cameraSupportFocus
         
-        self.overlayView.statusBar.elapsedTimeLabel.text = self.viewModel.updateTimeDisplay()
-        
+        self.overlayView.statusBar.elapsedTimeLabel.text = self.viewModel.updateTime()
+        self.viewModel.updateTimeDisplay = { [weak self] timeString in
+            self?.overlayView.statusBar.elapsedTimeLabel.text = timeString
+        }
         self.viewModel.updateThumbnail = { [weak self] image in
             self?.overlayView.modeBar.thumbnail = image
         }
@@ -102,7 +104,7 @@ extension CameraView {
         }
     }
     
-    @objc private func takePhotoOrVideo(_ sender: UIButton) {
+    @objc private func takePhotoOrVideo(_ sender: CaptureButton) {
         if (self.viewModel.cameraMode == .photo) {
             self.viewModel.cameraService.captureStillImage()
         } else {

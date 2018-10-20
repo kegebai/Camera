@@ -10,7 +10,7 @@ import Foundation
 
 extension FileManager {
     
-    static func temporaryDirectoryWithTemplateString(_ templateString: String) -> String {
+    static func temporaryDirectoryWithTemplateString(_ templateString: String) -> String? {
         var directoryPath: String = ""
         
         let mkdTemplate: String = NSTemporaryDirectory().appending(templateString)
@@ -24,8 +24,7 @@ extension FileManager {
         let result = mkdtemp(buffer)
         
         if (result != nil) {
-            directoryPath = FileManager.default.string(withFileSystemRepresentation: buffer!,
-                                                       length: strlen(result))
+            directoryPath = FileManager.default.string(withFileSystemRepresentation: buffer!, length: strlen(result))
         }
         free(buffer)
         

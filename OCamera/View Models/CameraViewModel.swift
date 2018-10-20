@@ -13,18 +13,18 @@ import AVFoundation
 class CameraViewModel {
     var cameraMode: CameraMode = .video
     //
+    var updateTimeDisplay: ((_ time: String) -> ())?
     var updateThumbnail: ((_ image: UIImage?) -> ())?
     
-    private(set) var cameraService: CameraService!
+    private(set) var cameraService: CameraService = CameraService()
     private var timer: Timer!
     
     init() {
-        self.cameraService = CameraService()
-        self.cameraService.delegate = self
-        
         NotificationCenter.observe(self,
                                    notification: .GeneraterThumbnail,
                                    selector: #selector(generateThumbnail(_:)))
+        
+        self.cameraService.delegate = self
     }
 }
 
@@ -44,11 +44,11 @@ extension CameraViewModel: CameraServiceDelegate {
 }
 
 extension CameraViewModel {
+    
     func startTimer() {
-        //self.timer.invalidate()
         self.timer = Timer(timeInterval: 0.5,
                            target: self,
-                           selector: #selector(updateTimeDisplay),
+                           selector: #selector(updateTime),
                            userInfo: nil,
                            repeats: true)
         RunLoop.current.add(self.timer, forMode: .common)
@@ -61,15 +61,17 @@ extension CameraViewModel {
 
 extension CameraViewModel {
     
-    @objc func updateTimeDisplay() -> String {
+    @objc func updateTime() -> String {
         let duration: CMTime = self.cameraService.recordedDuration()
         let time   : Int = Int(CMTimeGetSeconds(duration))
         let hours  : Int = time / 3600
-        let minutes: Int = time / 60 % 60
+        let minutes: Int = (time / 60) % 60
         let seconds: Int = time % 60
         
         let fmt: String = "%02i:%02i:%02i"
         let tempString: String = String(format: fmt, hours, minutes, seconds)
+        
+        self.updateTimeDisplay?(tempString)
         
         return tempString
     }

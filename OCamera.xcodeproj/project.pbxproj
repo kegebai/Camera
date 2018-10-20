@@ -24,7 +24,7 @@
 		82D222692158D804002332B0 /* StringExtention.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D222682158D804002332B0 /* StringExtention.swift */; };
 		82D2226B2158EBE9002332B0 /* Functions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D2226A2158EBE9002332B0 /* Functions.swift */; };
 		82D2226D2159443F002332B0 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D2226C2159443F002332B0 /* Constants.swift */; };
-		82D602A1215F38BE003E0740 /* ImageCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D602A0215F38BE003E0740 /* ImageCaptureService.swift */; };
+		82D602A1215F38BE003E0740 /* TakePhotoService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D602A0215F38BE003E0740 /* TakePhotoService.swift */; };
 		82D835692156D39E00E2E27D /* CameraModeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D835682156D39E00E2E27D /* CameraModeView.swift */; };
 		82D8356B2156D3BF00E2E27D /* StatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D8356A2156D3BF00E2E27D /* StatusView.swift */; };
 		82D8356D2156D3D000E2E27D /* PreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D8356C2156D3D000E2E27D /* PreviewView.swift */; };
@@ -32,7 +32,7 @@
 		82D835712156D3F100E2E27D /* CameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D835702156D3F100E2E27D /* CameraView.swift */; };
 		82D835772156D52C00E2E27D /* CameraService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D835762156D52C00E2E27D /* CameraService.swift */; };
 		82D8357A2156D5EE00E2E27D /* FileManagerExtention.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D835792156D5EE00E2E27D /* FileManagerExtention.swift */; };
-		82D83582215771F900E2E27D /* VideoRecordService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D83581215771F900E2E27D /* VideoRecordService.swift */; };
+		82D83582215771F900E2E27D /* ShootingVideoService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D83581215771F900E2E27D /* ShootingVideoService.swift */; };
 		82E75AD3215CB05C00316C11 /* ErrorExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82E75AD2215CB05C00316C11 /* ErrorExtension.swift */; };
 		82E75AD5215CB9D200316C11 /* CameraServiceError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82E75AD4215CB9D200316C11 /* CameraServiceError.swift */; };
 		82EB9EA1215A38DE00D4D759 /* CameraViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82EB9EA0215A38DE00D4D759 /* CameraViewModel.swift */; };
@@ -78,7 +78,7 @@
 		82D222682158D804002332B0 /* StringExtention.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringExtention.swift; sourceTree = "<group>"; };
 		82D2226A2158EBE9002332B0 /* Functions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Functions.swift; sourceTree = "<group>"; };
 		82D2226C2159443F002332B0 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
-		82D602A0215F38BE003E0740 /* ImageCaptureService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ImageCaptureService.swift; sourceTree = "<group>"; };
+		82D602A0215F38BE003E0740 /* TakePhotoService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TakePhotoService.swift; sourceTree = "<group>"; };
 		82D835682156D39E00E2E27D /* CameraModeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraModeView.swift; sourceTree = "<group>"; };
 		82D8356A2156D3BF00E2E27D /* StatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusView.swift; sourceTree = "<group>"; };
 		82D8356C2156D3D000E2E27D /* PreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewView.swift; sourceTree = "<group>"; };
@@ -86,7 +86,7 @@
 		82D835702156D3F100E2E27D /* CameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraView.swift; sourceTree = "<group>"; };
 		82D835762156D52C00E2E27D /* CameraService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraService.swift; sourceTree = "<group>"; };
 		82D835792156D5EE00E2E27D /* FileManagerExtention.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileManagerExtention.swift; sourceTree = "<group>"; };
-		82D83581215771F900E2E27D /* VideoRecordService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoRecordService.swift; sourceTree = "<group>"; };
+		82D83581215771F900E2E27D /* ShootingVideoService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShootingVideoService.swift; sourceTree = "<group>"; };
 		82E75AD2215CB05C00316C11 /* ErrorExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorExtension.swift; sourceTree = "<group>"; };
 		82E75AD4215CB9D200316C11 /* CameraServiceError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraServiceError.swift; sourceTree = "<group>"; };
 		82EB9EA0215A38DE00D4D759 /* CameraViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraViewModel.swift; sourceTree = "<group>"; };
@@ -232,8 +232,8 @@
 				82D222612158CF5E002332B0 /* NotificationService.swift */,
 				82E75AD4215CB9D200316C11 /* CameraServiceError.swift */,
 				82D835762156D52C00E2E27D /* CameraService.swift */,
-				82D602A0215F38BE003E0740 /* ImageCaptureService.swift */,
-				82D83581215771F900E2E27D /* VideoRecordService.swift */,
+				82D602A0215F38BE003E0740 /* TakePhotoService.swift */,
+				82D83581215771F900E2E27D /* ShootingVideoService.swift */,
 				82D2225F2158C739002332B0 /* WriterService.swift */,
 			);
 			path = Service;
@@ -396,7 +396,7 @@
 				82D8356D2156D3D000E2E27D /* PreviewView.swift in Sources */,
 				82D835712156D3F100E2E27D /* CameraView.swift in Sources */,
 				82D222622158CF5E002332B0 /* NotificationService.swift in Sources */,
-				82D602A1215F38BE003E0740 /* ImageCaptureService.swift in Sources */,
+				82D602A1215F38BE003E0740 /* TakePhotoService.swift in Sources */,
 				82579767215503D2006BF555 /* CaptureButton.swift in Sources */,
 				82D835692156D39E00E2E27D /* CameraModeView.swift in Sources */,
 				82D222692158D804002332B0 /* StringExtention.swift in Sources */,
@@ -404,7 +404,7 @@
 				82D222672158D5DF002332B0 /* PhotoFilter.swift in Sources */,
 				82D222602158C739002332B0 /* WriterService.swift in Sources */,
 				82D2226B2158EBE9002332B0 /* Functions.swift in Sources */,
-				82D83582215771F900E2E27D /* VideoRecordService.swift in Sources */,
+				82D83582215771F900E2E27D /* ShootingVideoService.swift in Sources */,
 				82D8356B2156D3BF00E2E27D /* StatusView.swift in Sources */,
 				82E75AD5215CB9D200316C11 /* CameraServiceError.swift in Sources */,
 				822C8E7E2154B081001BB40F /* AppDelegate.swift in Sources */,

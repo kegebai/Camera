@@ -15,6 +15,14 @@ class OverlayView: UIView {
         willSet { self.statusBar.flashControl.isHidden = newValue }
     }
     
+    lazy var statusBar: StatusView = {
+        let status: StatusView = StatusView(frame: CGRect(x: 0,
+                                                          y: 0,
+                                                      width: self.width,
+                                                     height: 48))
+        return status
+    }()
+    
     lazy var modeBar: CameraModeView = {
         let mode: CameraModeView = CameraModeView(frame: CGRect(x: 0,
                                                                 y: self.bounds.maxY-110,
@@ -22,14 +30,6 @@ class OverlayView: UIView {
                                                            height: 110))
         mode.addTarget(self, action: #selector(cameraModeChanged(_:)), for: .valueChanged)
         return mode
-    }()
-    
-    lazy var statusBar: StatusView = {
-        let status: StatusView = StatusView(frame: CGRect(x: 0,
-                                                          y: 0,
-                                                      width: self.width,
-                                                     height: 48))
-        return status
     }()
     
     override init(frame: CGRect) {
@@ -46,9 +46,8 @@ class OverlayView: UIView {
     
     override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
         guard self.modeBar.point(inside: self.convert(point, to: self.modeBar), with: event) ||
-            self.statusBar.point(inside: self.convert(point, to: self.statusBar), with: event) else {
-                return false
-        }
+            self.statusBar.point(inside: self.convert(point, to: self.statusBar), with: event) else { return false }
+        
         return true
     }
 }

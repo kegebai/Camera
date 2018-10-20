@@ -105,7 +105,6 @@ extension CameraModeView {
                 self.maxRight   = true
             }
         }
-        self.toggleSelected()
     }
 }
 
