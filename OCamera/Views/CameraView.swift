@@ -11,7 +11,9 @@ import UIKit
 import AVFoundation
 
 class CameraView: UIView {
-    private var viewModel: CameraViewModel!
+    private var cameraMode: CameraMode = .video
+    private var cameraService: CameraService!
+    private var timer: Timer!
     
     lazy var previewView: PreviewView = {
         let view: PreviewView = PreviewView(frame: self.bounds)
@@ -21,24 +23,18 @@ class CameraView: UIView {
     
     lazy var overlayView: OverlayView = {
         let view: OverlayView = OverlayView(frame: self.bounds)
-        view.statusBar.flashControl.addTarget(self,
-                                              action: #selector(flashControlChange(_:)),
-                                              for: .touchUpInside)
-        view.statusBar.swapCameraButton.addTarget(self,
-                                                  action: #selector(swapCameras(_:)),
-                                                  for: .touchUpInside)
-        view.modeBar.captureButton.addTarget(self,
-                                             action: #selector(takePhotoOrVideo(_:)),
-                                             for: .touchUpInside)
-        view.modeBar.addTarget(self,
-                               action: #selector(cameraModeChanged(_:)),
-                               for: .valueChanged)
+        view.statusBar.flashControl.addTarget(self, action: #selector(flashControlChange(_:)), for: .touchUpInside)
+        view.statusBar.swapCameraButton.addTarget(self, action: #selector(swapCameras(_:)), for: .touchUpInside)
+        view.modeBar.captureButton.addTarget(self, action: #selector(takePhotoOrVideo(_:)), for: .touchUpInside)
+        view.modeBar.addTarget(self, action: #selector(cameraModeChanged(_:)), for: .valueChanged)
         return view
     }()
     
     override init(frame: CGRect) {
         super.init(frame: frame)
         self.backgroundColor = .black
+        
+        NotificationCenter.observe(self, notification: .GeneraterThumbnail, selector: #selector(generateThumbnail(_:)))
         
         self.addSubview(self.previewView)
         self.addSubview(self.overlayView)
@@ -50,34 +46,27 @@ class CameraView: UIView {
 }
 
 extension CameraView {
-    func bind(viewModel: CameraViewModel) {
-        self.viewModel = viewModel
-        self.previewView.session       = self.viewModel.cameraService.captureSession
-        self.previewView.exposeEnabled = self.viewModel.cameraService.cameraSupportExpose
-        self.previewView.focusEnabled  = self.viewModel.cameraService.cameraSupportFocus
-        
-        self.overlayView.statusBar.elapsedTimeLabel.text = self.viewModel.updateTime()
-        self.viewModel.updateTimeDisplay = { [weak self] timeString in
-            self?.overlayView.statusBar.elapsedTimeLabel.text = timeString
-        }
-        self.viewModel.updateThumbnail = { [weak self] image in
-            self?.overlayView.modeBar.thumbnail = image
-        }
+    func bind(service: CameraService) {
+        self.cameraService = service
+        self.cameraService.detectionFaceDelegate = self.previewView
+        self.previewView.session       = self.cameraService.captureSession
+        self.previewView.exposeEnabled = self.cameraService.cameraSupportExpose
+        self.previewView.focusEnabled  = self.cameraService.cameraSupportFocus
     }
 }
 
 extension CameraView: PreviewViewDelegate {
 
     func tappedFocusAt(point: CGPoint) {
-        self.viewModel.cameraService.focusAt(point: point)
+        try! self.cameraService.focusAt(point: point)
     }
 
     func tappedExposeAt(point: CGPoint) {
-        self.viewModel.cameraService.exposeAt(point: point)
+        try! self.cameraService.exposeAt(point: point)
     }
 
     func tappedReset() {
-        self.viewModel.cameraService.resetModes()
+        try! self.cameraService.resetModes()
     }
 }
 
@@ -85,45 +74,78 @@ extension CameraView {
     
     @objc private func flashControlChange(_ sender: FlashControl) {
         let mode: Int = sender.selectedMode
-        if (self.viewModel.cameraMode == .photo) {
-            self.viewModel.cameraService.flashMode = AVCaptureDevice.FlashMode(rawValue: mode)!
+        if (self.cameraMode == .photo) {
+            self.cameraService.flashMode = AVCaptureDevice.FlashMode(rawValue: mode)!
         } else {
-            self.viewModel.cameraService.torchMode = AVCaptureDevice.TorchMode(rawValue: mode)!
+            self.cameraService.torchMode = AVCaptureDevice.TorchMode(rawValue: mode)!
         }
     }
     
     @objc private func swapCameras(_ sender: Any) {
-        if (self.viewModel.cameraService.canSwitchCamera()) {
-            self.overlayView.flashControlIsHidden =
-                self.viewModel.cameraMode == .photo ?
-                    !self.viewModel.cameraService.cameraHasFlash : !self.viewModel.cameraService.cameraHasTorch
-            
-            self.previewView.focusEnabled  = self.viewModel.cameraService.cameraSupportFocus
-            self.previewView.exposeEnabled = self.viewModel.cameraService.cameraSupportExpose
-            self.viewModel.cameraService.resetModes()
+        if (self.cameraService.switchCamera()) {
+            var hidden = false
+            hidden = self.cameraMode == .photo ? !self.cameraService.cameraHasFlash : !self.cameraService.cameraHasTorch
+            self.overlayView.flashControlIsHidden = hidden
+            self.previewView.focusEnabled  = self.cameraService.cameraSupportFocus
+            self.previewView.exposeEnabled = self.cameraService.cameraSupportExpose
+            try! self.cameraService.resetModes()
         }
     }
     
     @objc private func takePhotoOrVideo(_ sender: CaptureButton) {
-        if (self.viewModel.cameraMode == .photo) {
-            self.viewModel.cameraService.captureStillImage()
+        if (self.cameraMode == .photo) {
+            self.cameraService.captureStillImage()
         } else {
-            if (!self.viewModel.cameraService.isRecording) {
-                DispatchQueue.global().async {
-                    self.viewModel.cameraService.startRecording()
-                    self.viewModel.startTimer()
+            if (!self.cameraService.isRecording) {
+                DispatchQueue(label: "com.ocamera").async {
+                    try! self.cameraService.startRecording()
                 }
+                self.startTimer()
             } else {
-                self.viewModel.cameraService.stopRecording()
-                self.viewModel.stopTimer()
+                self.cameraService.stopRecording()
+                self.stopTimer()
             }
         }
         sender.isSelected = !sender.isSelected
     }
     
     @objc private func cameraModeChanged(_ sender: CameraModeView) {
-        guard self.viewModel != nil else { return }
+        guard self.cameraService != nil else { return }
+        self.cameraMode = sender.cameraMode
+    }
+    
+    @objc private func generateThumbnail(_ noti: Notification) {
+        self.overlayView.modeBar.thumbnailButton.setImage(noti.object as? UIImage, for: .normal)
+    }
+}
+
+extension CameraView {
+    
+    private func startTimer() {
+        self.timer = Timer(timeInterval: 0.5,
+                           target: self,
+                           selector: #selector(updateTimeDisplay),
+                           userInfo: nil,
+                           repeats: true)
+        RunLoop.current.add(self.timer, forMode: .common)
+    }
+    
+    private func stopTimer() {
+        self.timer.invalidate()
+        self.timer = nil
+        self.overlayView.statusBar.elapsedTimeLabel.text = "00:00:00"
+    }
+    
+    @objc private func updateTimeDisplay() {
+        let duration: CMTime = self.cameraService.recordedDuration()
+        let time   : Int = Int(CMTimeGetSeconds(duration))
+        let hours  : Int = time / 3600
+        let minutes: Int = (time / 60) % 60
+        let seconds: Int = time % 60
         
-        self.viewModel.cameraMode = sender.cameraMode
+        let fmt: String = "%02i:%02i:%02i"
+        let tempString: String = String(format: fmt, hours, minutes, seconds)
+        
+        self.overlayView.statusBar.elapsedTimeLabel.text = tempString
     }
 }

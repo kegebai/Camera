@@ -18,21 +18,16 @@ class StatusView: UIView {
     }()
     
     lazy var elapsedTimeLabel: UILabel = {
-        let label: UILabel = UILabel(frame: CGRect(x: 100,
-                                                   y: 11,
-                                               width: self.width-100*2,
-                                              height: 26))
+        let label: UILabel = UILabel(frame: CGRect(x: 100, y: 11, width: self.width-100*2, height: 26))
         label.font = UIFont.systemFont(ofSize: 19)
         label.textColor = .white
         label.textAlignment = .center
+        label.text = "00:00:00"
         return label
     }()
     
     lazy var swapCameraButton: UIButton = {
-        let button: UIButton = UIButton(frame: CGRect(x: self.width-36,
-                                                      y: 14,
-                                                  width: 20,
-                                                 height: 20))
+        let button: UIButton = UIButton(frame: CGRect(x: self.width-36, y: 14, width: 20, height: 20))
         button.setImage(UIImage(named: "camera"), for: .normal)
         return button
     }()

@@ -1,5 +1,5 @@
 //
-//  TakePhotoService.swift
+//  PhotoService.swift
 //  OCamera
 //
 //  Created by kegebai on 2018/9/24.
@@ -12,7 +12,7 @@ import UIKit
 import AssetsLibrary
 import Photos
 
-class TakePhotoService: CameraService {
+class PhotoService: CameraService {
     
     override init() {
         super.init()
@@ -40,7 +40,7 @@ class TakePhotoService: CameraService {
 }
 
 // Still Image Capture
-extension TakePhotoService {
+extension PhotoService {
     
     private func writeImageToAssetsLibrary(_ image: UIImage) {
         /*
@@ -61,7 +61,7 @@ extension TakePhotoService {
             if (isSuccess && error == nil) {
                 self.postThumbnailNotifyWith(image: image)
             } else {
-                try? self.delegate?.assetLibraryWriteFailed()
+                print(error as Any)
             }
         })
     }

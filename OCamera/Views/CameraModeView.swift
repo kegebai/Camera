@@ -27,12 +27,11 @@ class CameraModeView: UIControl {
         willSet {
             if (newValue == .photo) {
                 self.layer.backgroundColor = UIColor.black.cgColor
-                self.captureButton.captureMode = .photo
                 self.captureButton.isSelected  = false
+                self.captureButton.captureMode = .photo
             } else {
                 self.layer.backgroundColor = UIColor(white: 0.5, alpha: 0.5).cgColor
                 self.captureButton.captureMode = .video
-                //self.captureButton.isSelected  = true
             }
         }
         didSet {
@@ -41,12 +40,12 @@ class CameraModeView: UIControl {
     }
     
     private var foregroundColor: UIColor = UIColor(red: 1.000, green: 0.734, blue: 0.006, alpha: 1.0)
-    private var containerView  : UIView  = UIView(frame: CGRect(x: 0, y: 0, width: 120, height: 20))
+    private var containerView  : UIView  = UIView()
     private var videoTextLayer : CATextLayer = CATextLayer()
     private var photoTextLayer : CATextLayer = CATextLayer()
     
     private var maxLeft : Bool = false
-    private var maxRight: Bool = true
+    private var maxRight: Bool = false
     
     private var videoTextWidth: CGFloat = 0.0
     
@@ -66,10 +65,9 @@ class CameraModeView: UIControl {
     }
     
     override func draw(_ rect: CGRect) {
-        //super.draw(rect)
         let context: CGContext = UIGraphicsGetCurrentContext()!
         context.setFillColor(self.foregroundColor.cgColor)
-        context.fillEllipse(in: CGRect(x: self.bounds.midX-4.0, y: 2.0, width: 6.0, height: 6.0))
+        context.fillEllipse(in: CGRect(x: rect.midX-4.0, y: 2.0, width: 6.0, height: 6.0))
     }
 }
 
@@ -111,12 +109,12 @@ extension CameraModeView {
 extension CameraModeView {
     
     private func setUp() {
+        self.maxRight = true
         self.backgroundColor = UIColor(white: 0.0, alpha: 0.5)
         self.cameraMode = .video
         
         self.captureButton.frame = CGRect(x: self.centerX-34, y: 36, width: 68, height: 68)
         self.thumbnailButton = UIButton(frame: CGRect(x: 40, y: 45, width: 45, height: 45))
-        //self.thumbnailButton.addTarget(self, action: #selector(openCameraRoll(_:)), for: .touchUpOutside)
         self.addSubview(self.captureButton)
         self.addSubview(self.thumbnailButton)
         
@@ -130,6 +128,7 @@ extension CameraModeView {
         self.videoTextLayer.frame = CGRect(x: 0,  y: 0, width: 40, height: 20)
         self.photoTextLayer.frame = CGRect(x: 60, y: 0, width: 50, height: 20)
         
+        self.containerView.frame  = CGRect(x: 0, y: 0, width: 120, height: 20)
         self.containerView.layer.addSublayer(self.videoTextLayer)
         self.containerView.layer.addSublayer(self.photoTextLayer)
         self.containerView.backgroundColor = .clear
@@ -156,9 +155,5 @@ extension CameraModeView {
             .font: UIFont(name: "AvenirNextCondensed-DemiBold", size: 17.0) as Any,
             .foregroundColor: UIColor.white
         ]
-    }
-    
-    private func toggleSelected() {
-        self.captureButton.isSelected = !self.captureButton.isSelected
     }
 }

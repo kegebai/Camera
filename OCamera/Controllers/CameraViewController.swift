@@ -9,25 +9,28 @@
 import Foundation
 import UIKit
 import CoreServices
+import AVFoundation
 
 class CameraViewController: UIViewController {
+    
+    lazy var cameraView: CameraView = {
+        let view: CameraView = CameraView(frame: self.view.bounds)
+        view.overlayView.modeBar.thumbnailButton.addTarget(self, action: #selector(openCameraRoll(_:)), for: .touchUpInside)
+        return view
+    }()
+    
+    private(set) var cameraService: CameraService = CameraService()
     
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
         
-        let cameraView = CameraView(frame: self.view.bounds)
-        cameraView.overlayView.modeBar.thumbnailButton.addTarget(self,
-                                                                 action: #selector(openCameraRoll(_:)),
-                                                                 for: .touchUpInside)
-        self.view.addSubview(cameraView)
+        self.view.addSubview(self.cameraView)
         
         //
-        let viewModel = CameraViewModel()
-        
-        if (try! viewModel.cameraService.configurationSession()) {
-            cameraView.bind(viewModel: viewModel)
-            viewModel.cameraService.startSession()
+        if (try! self.cameraService.configurationSession()) {
+            self.cameraView.bind(service: self.cameraService)
+            self.cameraService.startSession()
         }
     }
     
@@ -35,7 +38,6 @@ class CameraViewController: UIViewController {
 }
 
 extension CameraViewController {
-    
     @objc private func openCameraRoll(_ sender: UIButton) {
         let pickerController: UIImagePickerController = UIImagePickerController()
         pickerController.sourceType = .photoLibrary

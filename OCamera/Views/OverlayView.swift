@@ -56,9 +56,9 @@ extension OverlayView {
     
     @objc private func cameraModeChanged(_ sender: CameraModeView) {
         let photoEnabled: Bool = sender.cameraMode == .photo
-        let toColor: UIColor   = photoEnabled ? .black : UIColor(white: 0.0, alpha: 0.5)
+        //let toColor: UIColor   = photoEnabled ? .black : UIColor(white: 0.0, alpha: 0.5)
+        //self.statusBar.layer.backgroundColor = toColor.cgColor
         let toOpacity: CGFloat = photoEnabled ? 0.0 : 1.0
-        self.statusBar.layer.backgroundColor = toColor.cgColor
         self.statusBar.elapsedTimeLabel.layer.opacity = Float(toOpacity)
     }
 }

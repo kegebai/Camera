@@ -1,5 +1,5 @@
 //
-//  ShootingVideoService.swift
+//  VideoService.swift
 //  OCamera
 //
 //  Created by kegebai on 2018/9/23.
@@ -14,7 +14,7 @@ import Photos
 
 @objc protocol TargetImage { func setImage(from ciimage: CIImage) }
 
-class ShootingVideoService: CameraService {
+class VideoService: CameraService {
     weak var target: TargetImage?
     
     private var videoDataOutput: AVCaptureVideoDataOutput = AVCaptureVideoDataOutput()
@@ -36,23 +36,20 @@ class ShootingVideoService: CameraService {
     }
     
     override func configurationSessionOutputs() throws -> Bool {
-        // Setup the still image output
-        self.imageOutput.outputSettings = [AVVideoCodecKey: AVVideoCodecType.jpeg]
-        guard self.captureSession.canAddOutput(self.imageOutput) else { return false }
-        
-        self.captureSession.addOutput(self.imageOutput)
-        
         // Setup movie file output
-        guard self.captureSession.canAddOutput(self.movieOutput) else { return false }
+        guard self.captureSession.canAddOutput(self.movieOutput) else {
+            throw CameraServiceError.deviceConfigurationFailed
+        }
         
         self.captureSession.addOutput(self.movieOutput)
 
         return true
     }
     
-    override func startRecording() {
-        guard !self.isRecording,
-            let connection: AVCaptureConnection = self.movieOutput.connection(with: .video) else { return }
+    override func startRecording() throws {
+        guard !self.isRecording else { return }
+        
+        let connection: AVCaptureConnection = self.movieOutput.connection(with: .video)!
 
         if connection.isVideoOrientationSupported {
             connection.videoOrientation = self.currentVideoOrientation()
@@ -64,11 +61,15 @@ class ShootingVideoService: CameraService {
 
         let device: AVCaptureDevice = self.activeCamera()
         if device.isSmoothAutoFocusSupported {
-            try? device.lockForConfiguration()
-            device.isSmoothAutoFocusEnabled = false
-            device.unlockForConfiguration()
+            do {
+                try device.lockForConfiguration()
+                device.isSmoothAutoFocusEnabled = false
+                device.unlockForConfiguration()
+            } catch let error {
+                print(error)
+            }
         } else {
-            try? self.delegate?.deviceConfigurationFailed()
+            throw CameraServiceError.deviceConfigurationFailed
         }
 
         self.movieOutput.startRecording(to: self.outputURL!, recordingDelegate: self)
@@ -85,7 +86,7 @@ class ShootingVideoService: CameraService {
     }
 }
 
-extension ShootingVideoService: AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureAudioDataOutputSampleBufferDelegate {
+extension VideoService: AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureAudioDataOutputSampleBufferDelegate {
 
     func captureOutput(_ output: AVCaptureOutput,
                        didOutput sampleBuffer: CMSampleBuffer,
@@ -101,14 +102,14 @@ extension ShootingVideoService: AVCaptureVideoDataOutputSampleBufferDelegate, AV
     }
 }
 
-extension ShootingVideoService: WriterServiceDelegate {
+extension VideoService: WriterServiceDelegate {
 
     func writerServiceDidWriteVideoAtURL(_ videoURL: URL) {
         self.writeVideoToAssetsLibraryAt(url: videoURL)
     }
 }
 
-extension ShootingVideoService {
+extension VideoService {
     
     private func writeVideoToAssetsLibraryAt(url: URL) {
         /*
@@ -133,7 +134,7 @@ extension ShootingVideoService {
                 if isSuccess {
                     self.generatorthumbnailForVideoAt(url: url)
                 } else {
-                    try? self.delegate?.assetLibraryWriteFailed()
+                    print(error as Any)
                 }
             })
         }

@@ -24,8 +24,9 @@ class CaptureButton: UIButton {
     private var circleLayer: CALayer = CALayer()
     
     //
-    convenience init(withMode: CameraMode? = .video) {
+    convenience init(withMode mode: CameraMode? = .video) {
         self.init(frame: DEFAULT_FRAME)
+        self.captureMode = mode!
         
         self.setUp()
     }
@@ -65,14 +66,13 @@ class CaptureButton: UIButton {
                     scaleAnimation.toValue  = 1.0
                     radiusAnimation.toValue = self.circleLayer.bounds.width / 2.0
                 }
+                self.circleLayer.setValue(radiusAnimation.toValue, forKey: "cornerRadius")
+                self.circleLayer.setValue(scaleAnimation.toValue,  forKey: "transform.scale")
 
                 let animationGroup: CAAnimationGroup = CAAnimationGroup()
                 animationGroup.animations = [scaleAnimation, radiusAnimation]
                 animationGroup.beginTime  = CACurrentMediaTime() + 0.2
                 animationGroup.duration   = 0.35
-
-                self.circleLayer.setValue(scaleAnimation.toValue,  forKey: "transform.scale")
-                self.circleLayer.setValue(radiusAnimation.toValue, forKey: "cornerRadius")
                 self.circleLayer.add(animationGroup, forKey: "scaleAndRadiusAnimation")
             }
         }
@@ -92,7 +92,6 @@ extension CaptureButton {
 extension CaptureButton {
     
     private func setUp() {
-        self.captureMode              = .video
         self.backgroundColor          = .clear
         self.tintColor                = .clear
         let circleColor: UIColor      = self.captureMode == .video ? .red : .white

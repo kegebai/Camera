@@ -12,31 +12,30 @@ import UIKit
 import AssetsLibrary
 import Photos
 
-@objc protocol CameraServiceDelegate {
-    func deviceConfigurationFailed() throws
-    func mediaCaptureFailed() throws
-    func assetLibraryWriteFailed() throws
+@objc protocol FaceDetectionDelegate {
+    func detection(faces: Array<AVMetadataObject>)
 }
 
 // Define KVO keyPath for observing 'OCameraAdjustingExposureKeyPath' device property.
 let OCameraAdjustingExposureKeyPath: String = "OCameraAdjustingExposureKeyPath"
 
 class CameraService: NSObject {
-    weak var delegate: CameraServiceDelegate?
+    weak var detectionFaceDelegate: FaceDetectionDelegate?
     
     private(set) var captureSession: AVCaptureSession = AVCaptureSession()
     
     private var activeVideoInput: AVCaptureDeviceInput?
     
-    var imageOutput: AVCaptureStillImageOutput = AVCaptureStillImageOutput()
-    //var photoOutput: AVCapturePhotoOutput      = AVCapturePhotoOutput()
-    var movieOutput: AVCaptureMovieFileOutput  = AVCaptureMovieFileOutput()
+    var imageOutput: AVCaptureStillImageOutput  = AVCaptureStillImageOutput()
+    //var photoOutput: AVCapturePhotoOutput       = AVCapturePhotoOutput()
+    var movieOutput: AVCaptureMovieFileOutput   = AVCaptureMovieFileOutput()
+    var metadataOutput: AVCaptureMetadataOutput = AVCaptureMetadataOutput()
     
     private(set) var outputURL: URL? {
         set {}
         get {
-            guard let dirPath: String = FileManager.temporaryDirectoryWithTemplateString("OCamera.xxx")
-                else { return nil }
+            let dirPath: String = NSTemporaryDirectory().appending("OCamera.xxx")
+            if dirPath.isEmpty { return nil }
             return URL(fileURLWithPath: dirPath.appending("ocamera_movie.mov"))
         }
     }
@@ -46,7 +45,7 @@ class CameraService: NSObject {
         set {}
         get {
             //return AVCaptureDevice.devices(for: .video).count
-            return self.cameras(for: nil).count
+            return self.cameras(for: .video).count
         }
     }
     
@@ -74,11 +73,13 @@ class CameraService: NSObject {
         set {
             let device: AVCaptureDevice = self.activeCamera()
             if device.torchMode != torchMode && device.isTorchModeSupported(torchMode) {
-                try? device.lockForConfiguration()
-                device.torchMode = torchMode
-                device.unlockForConfiguration()
-            } else {
-                try? self.delegate?.deviceConfigurationFailed()
+                do {
+                    try device.lockForConfiguration()
+                    device.torchMode = torchMode
+                    device.unlockForConfiguration()
+                } catch let error {
+                    print(error)
+                }
             }
         }
         
@@ -89,11 +90,13 @@ class CameraService: NSObject {
         set {
             let device: AVCaptureDevice = self.activeCamera()
             if device.flashMode != flashMode && device.isFlashModeSupported(flashMode) {
-                try? device.lockForConfiguration()
-                device.torchMode = torchMode
-                device.unlockForConfiguration()
-            } else {
-                try? self.delegate?.deviceConfigurationFailed()
+                do {
+                    try device.lockForConfiguration()
+                    device.flashMode = flashMode
+                    device.unlockForConfiguration()
+                } catch let error {
+                    print(error)
+                }
             }
         }
         
@@ -123,39 +126,50 @@ class CameraService: NSObject {
                 device.removeObserver(self, forKeyPath: OCameraAdjustingExposureKeyPath, context: nil)
                 
                 DispatchQueue.main.async {
-                    try? device.lockForConfiguration()
-                    device.exposureMode = .locked
-                    device.unlockForConfiguration()
+                    do {
+                        try device.lockForConfiguration()
+                        device.exposureMode = .locked
+                        device.unlockForConfiguration()
+                    } catch let error {
+                        print(error)
+                    }
                 }
-            } else {
-                try? self.delegate?.deviceConfigurationFailed()
             }
         } else {
-            super.observeValue(forKeyPath: keyPath,
-                               of: object,
-                               change: change,
-                               context: context)
+            super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
         }
     }
     
     // MARK: - Hooks
     func configurationSessionInputs() throws -> Bool {
         // Set up default camera device
-        guard let videoDevice: AVCaptureDevice = self.cameras(for: .video).first,
-            let videoInput: AVCaptureDeviceInput = try? AVCaptureDeviceInput(device: videoDevice),
-            self.captureSession.canAddInput(videoInput)
-            else { return false }
-        
-        self.captureSession.addInput(videoInput)
-        self.activeVideoInput = videoInput
+        let videoDevice: AVCaptureDevice = self.cameras(for: .video).first!
+        do {
+            let videoInput: AVCaptureDeviceInput = try AVCaptureDeviceInput(device: videoDevice)
+            
+            guard self.captureSession.canAddInput(videoInput) else { return false }
+            
+            self.captureSession.addInput(videoInput)
+            self.activeVideoInput = videoInput
+            
+        } catch let error {
+            print(error)
+            throw CameraServiceError.deviceConfigurationFailed
+        }
         
         // Setup default microphone
-        guard let audioDevice: AVCaptureDevice = self.cameras(for: .audio).first,
-            let audioInput: AVCaptureDeviceInput = try? AVCaptureDeviceInput(device: audioDevice),
-            self.captureSession.canAddInput(audioInput)
-            else { return false }
-        
-        self.captureSession.addInput(audioInput)
+        let audioDevice: AVCaptureDevice = self.cameras(for: .audio).first!
+        do {
+            let audioInput: AVCaptureDeviceInput = try AVCaptureDeviceInput(device: audioDevice)
+            
+            guard self.captureSession.canAddInput(audioInput) else { return false }
+            
+            self.captureSession.addInput(audioInput)
+            
+        } catch let error {
+            print(error)
+            throw CameraServiceError.deviceConfigurationFailed
+        }
 
         return true
     }
@@ -163,12 +177,25 @@ class CameraService: NSObject {
     func configurationSessionOutputs() throws -> Bool {
         // Setup the still image output
         self.imageOutput.outputSettings = [AVVideoCodecKey: AVVideoCodecType.jpeg]
-        guard self.captureSession.canAddOutput(self.imageOutput) else { return false }
+        guard self.captureSession.canAddOutput(self.imageOutput) else {
+            throw CameraServiceError.deviceConfigurationFailed
+        }
         self.captureSession.addOutput(self.imageOutput)
         
         // Setup movie file output
-        guard self.captureSession.canAddOutput(self.movieOutput) else { return false }
+        guard self.captureSession.canAddOutput(self.movieOutput) else {
+            throw CameraServiceError.deviceConfigurationFailed
+        }
         self.captureSession.addOutput(self.movieOutput)
+        
+        // Setup face detection output
+        guard self.captureSession.canAddOutput(self.metadataOutput) else {
+            throw CameraServiceError.deviceConfigurationFailed
+        }
+        self.captureSession.addOutput(self.metadataOutput)
+        let metadataObjectTypes: Array = [AVMetadataObject.ObjectType.face]
+        self.metadataOutput.metadataObjectTypes = metadataObjectTypes
+        self.metadataOutput.setMetadataObjectsDelegate(self, queue: DispatchQueue.main)
         
         return true
     }
@@ -183,10 +210,11 @@ class CameraService: NSObject {
             connection.videoOrientation = self.currentVideoOrientation()
         }
         
-        
-        
         let completionHandler = { (sampleBuffer: CMSampleBuffer?, error: Error?) in
-            guard (sampleBuffer != nil) else { return }
+            guard (sampleBuffer != nil) else {
+                print("NULL sampleBuffer: \(String(describing: error?.localizedDescription))")
+                return
+            }
             
             let imageData: Data = AVCaptureStillImageOutput.jpegStillImageNSDataRepresentation(sampleBuffer!)!
 //            let data: Data = AVCapturePhotoOutput.jpegPhotoDataRepresentation(forJPEGSampleBuffer: sampleBuffer!,
@@ -200,10 +228,10 @@ class CameraService: NSObject {
     }
 
     // MARK: -- video
-    func startRecording() {
-        guard !self.isRecording,
-            let connection: AVCaptureConnection = self.movieOutput.connection(with: .video)
-            else { return }
+    func startRecording() throws {
+        guard !self.isRecording else { return }
+        
+        let connection: AVCaptureConnection = self.movieOutput.connection(with: .video)!
         
         if connection.isVideoOrientationSupported {
             connection.videoOrientation = self.currentVideoOrientation()
@@ -215,11 +243,14 @@ class CameraService: NSObject {
         
         let device: AVCaptureDevice = self.activeCamera()
         if device.isSmoothAutoFocusSupported {
-            try? device.lockForConfiguration()
-            device.isSmoothAutoFocusEnabled = false
-            device.unlockForConfiguration()
-        } else {
-            try? self.delegate?.deviceConfigurationFailed()
+            do {
+                try device.lockForConfiguration()
+                device.isSmoothAutoFocusEnabled = true
+                device.unlockForConfiguration()
+            } catch let error {
+                print(error)
+                throw CameraServiceError.deviceConfigurationFailed
+            }
         }
         //
         self.movieOutput.startRecording(to: self.outputURL!, recordingDelegate: self)
@@ -240,50 +271,23 @@ extension CameraService {
     func configurationSession() throws -> Bool {
         self.captureSession.sessionPreset = self.sessionParent()
         
-        // Set up default camera device
-        guard let videoDevice: AVCaptureDevice = self.cameras(for: .video).first,
-            let videoInput: AVCaptureDeviceInput = try? AVCaptureDeviceInput(device: videoDevice),
-            self.captureSession.canAddInput(videoInput)
-            else { return false }
-
-        self.captureSession.addInput(videoInput)
-        self.activeVideoInput = videoInput
-
-        // Setup default microphone
-        guard let audioDevice: AVCaptureDevice = self.cameras(for: .audio).first,
-            let audioInput: AVCaptureDeviceInput = try? AVCaptureDeviceInput(device: audioDevice),
-            self.captureSession.canAddInput(audioInput)
-            else { return false }
-        
-        self.captureSession.addInput(audioInput)
-
-        // Setup the still image output
-        self.imageOutput.outputSettings = [AVVideoCodecKey: AVVideoCodecType.jpeg]
-        guard self.captureSession.canAddOutput(self.imageOutput) else { return false }
-        self.captureSession.addOutput(self.imageOutput)
-
-        // Setup movie file output
-        guard self.captureSession.canAddOutput(self.movieOutput) else { return false }
-        self.captureSession.addOutput(self.movieOutput)
-        
-        /*
         guard try! self.configurationSessionInputs()  else { return false }
         guard try! self.configurationSessionOutputs() else { return false }
-         */
+        
         return true
     }
     
     func startSession() {
-        DispatchQueue.global().async {
-            if !self.captureSession.isRunning {
+        if !self.captureSession.isRunning {
+            DispatchQueue.global().async {
                 self.captureSession.startRunning()
             }
         }
     }
     
     func stopSession() {
-        DispatchQueue.global().async {
-            if self.captureSession.isRunning {
+        if self.captureSession.isRunning {
+            DispatchQueue.global().async {
                 self.captureSession.stopRunning()
             }
         }
@@ -299,59 +303,70 @@ extension CameraService {
         guard self.canSwitchCamera() else { return false }
         
         let videoDevice: AVCaptureDevice = self.inactiveCamera()
-        //let videoInput: AVCaptureDeviceInput = try! AVCaptureDeviceInput(device: videoDevice)
         
-        guard let videoInput: AVCaptureDeviceInput = try? AVCaptureDeviceInput(device: videoDevice) else {
-            try? self.delegate?.deviceConfigurationFailed()
-            return false
-        }
-        
-        self.captureSession.beginConfiguration()
-        self.captureSession.removeInput(self.activeVideoInput!)
-        
-        if self.captureSession.canAddInput(videoInput) {
+        do {
+            let videoInput: AVCaptureDeviceInput = try AVCaptureDeviceInput(device: videoDevice)
+            
+            self.captureSession.beginConfiguration()
+            self.captureSession.removeInput(self.activeVideoInput!)
+            
+            guard self.captureSession.canAddInput(videoInput) else {
+                self.captureSession.addInput(self.activeVideoInput!)
+                return false
+            }
             self.captureSession.addInput(videoInput)
             self.activeVideoInput = videoInput
-        } else {
-            self.captureSession.addInput(self.activeVideoInput!)
+            self.captureSession.commitConfiguration()
+            
+            return true
+        } catch let error {
+            print(error)
         }
-        self.captureSession.commitConfiguration()
-        
-        return true
+        return false
     }
     
-    func focusAt(point: CGPoint) {
+    func focusAt(point: CGPoint) throws {
         let device: AVCaptureDevice = self.activeCamera()
         
         if device.isFocusPointOfInterestSupported && device.isFocusModeSupported(.autoFocus) {
-            try? device.lockForConfiguration()
-            device.focusPointOfInterest = point
-            device.focusMode = .autoFocus
-            device.unlockForConfiguration()
-        } else {
-            try? self.delegate?.deviceConfigurationFailed()
+            do {
+                try device.lockForConfiguration()
+                device.focusPointOfInterest = point
+                device.focusMode = .autoFocus
+                device.unlockForConfiguration()
+            } catch let error {
+                print(error)
+                throw CameraServiceError.deviceConfigurationFailed
+            }
         }
     }
     
-    func exposeAt(point: CGPoint) {
+    func exposeAt(point: CGPoint) throws {
         let device: AVCaptureDevice = self.activeCamera()
         let exposureMode: AVCaptureDevice.ExposureMode = .autoExpose
         
         if device.isExposurePointOfInterestSupported && device.isExposureModeSupported(exposureMode) {
-            try? device.lockForConfiguration()
-            device.exposurePointOfInterest = point
-            device.exposureMode = exposureMode
-            
-            if device.isExposureModeSupported(.locked) {
-                device.addObserver(self, forKeyPath: OCameraAdjustingExposureKeyPath, options: .new, context: nil)
+            do {
+                try device.lockForConfiguration()
+                
+                device.exposurePointOfInterest = point
+                device.exposureMode = exposureMode
+                
+                if device.isExposureModeSupported(.locked) {
+                    device.addObserver(self,
+                                       forKeyPath: OCameraAdjustingExposureKeyPath,
+                                       options: .new,
+                                       context: nil)
+                }
+                device.unlockForConfiguration()
+            } catch let error {
+                print(error)
+                throw CameraServiceError.deviceConfigurationFailed
             }
-            device.unlockForConfiguration()
-        } else {
-            try? self.delegate?.deviceConfigurationFailed()
         }
     }
     
-    func resetModes() {
+    func resetModes() throws {
         let device: AVCaptureDevice = self.activeCamera()
         let exposureMode: AVCaptureDevice.ExposureMode = .autoExpose
         let focusMode: AVCaptureDevice.FocusMode = .autoFocus
@@ -359,18 +374,21 @@ extension CameraService {
         let canResetFocus   : Bool = device.isFocusPointOfInterestSupported && device.isFocusModeSupported(focusMode)
         let centerPoint: CGPoint = CGPoint(x: 0.5, y: 0.5)
         
-        try? device.lockForConfiguration()
-        if canResetExposure {
-            device.exposureMode = exposureMode
-            device.exposurePointOfInterest = centerPoint
+        do {
+            try device.lockForConfiguration()
+            if canResetExposure {
+                device.exposureMode = exposureMode
+                device.exposurePointOfInterest = centerPoint
+            }
+            if canResetFocus {
+                device.focusMode = focusMode
+                device.focusPointOfInterest = centerPoint
+            }
+            device.unlockForConfiguration()
+        } catch let error {
+            print(error)
+            throw CameraServiceError.deviceConfigurationFailed
         }
-        if canResetFocus {
-            device.focusMode = focusMode
-            device.focusPointOfInterest = centerPoint
-        }
-        device.unlockForConfiguration()
-        
-        //try? self.delegate?.deviceConfigurationFailed()
     }
 }
 
@@ -378,16 +396,25 @@ extension CameraService: AVCaptureFileOutputRecordingDelegate {
     
     func fileOutput(_ output: AVCaptureFileOutput,
                     didFinishRecordingTo outputFileURL: URL,
-                    from connections: [AVCaptureConnection],
-                    error: Error?) {
-        
-        if (error != nil) {
-            try? self.delegate?.mediaCaptureFailed()
-        } else {
+                    from connections: [AVCaptureConnection], error: Error?) {
+        if (error == nil) {
             self.writeVideoToAssetsLibraryAt(url: self.outputURL!)
+        } else {
+            print(error as Any)
         }
-        
         self.outputURL = nil
+    }
+}
+
+extension CameraService: AVCaptureMetadataOutputObjectsDelegate {
+    func metadataOutput(_ output: AVCaptureMetadataOutput,
+                        didOutput metadataObjects: [AVMetadataObject],
+                        from connection: AVCaptureConnection) {
+        
+        for obj in Array(metadataObjects) as! Array<AVMetadataFaceObject> {
+            print("Face detected with ID: \(obj.faceID)\nFace bounds: \(obj.bounds)")
+        }
+        self.detectionFaceDelegate?.detection(faces: metadataObjects)
     }
 }
 
@@ -400,17 +427,6 @@ extension CameraService {
     }
     
     private func writeImageToAssetsLibrary(_ image: UIImage) {
-        /*
-        let orientation: ALAssetOrientation = ALAssetOrientation(rawValue: Int(Float(image.imageOrientation.rawValue)))!
-
-        ALAssetsLibrary().writeImage(toSavedPhotosAlbum: image.cgImage, orientation: orientation) { (assetURL, error) in
-            if error == nil {
-                self.postThumbnailNotifyWith(image: image)
-            } else {
-                try? self.delegate?.assetLibraryWriteFailed()
-            }
-        }
-         */
         
         PHPhotoLibrary.shared().performChanges({
             let _ = PHAssetChangeRequest.creationRequestForAsset(from: image)
@@ -418,27 +434,12 @@ extension CameraService {
             if (isSuccess && error == nil) {
                 self.postThumbnailNotifyWith(image: image)
             } else {
-                try? self.delegate?.assetLibraryWriteFailed()
+                print(error as Any)
             }
         })
     }
 
     private func writeVideoToAssetsLibraryAt(url: URL) {
-        /*
-        let library: ALAssetsLibrary = ALAssetsLibrary()
-        
-        let completionBlock = { (assetsURL: URL?, error: Error?) in
-            if (error != nil) {
-                try self.delegate?.assetLibraryWriteFailed()
-            } else {
-                self.generatorThumbnailForVideoAt(url: url)
-            }
-        } as! ALAssetsLibraryWriteVideoCompletionBlock
-
-        if library.videoAtPathIs(compatibleWithSavedPhotosAlbum: url) {
-            library.writeVideoAtPath(toSavedPhotosAlbum: url, completionBlock: completionBlock)
-        }
-         */
         
         if AVAsset(url: url).isCompatibleWithSavedPhotosAlbum {
             PHPhotoLibrary.shared().performChanges({
@@ -447,7 +448,7 @@ extension CameraService {
                 if isSuccess {
                     self.generatorThumbnailForVideoAt(url: url)
                 } else {
-                    try? self.delegate?.assetLibraryWriteFailed()
+                    print(error as Any)
                 }
             })
         }
@@ -468,10 +469,6 @@ extension CameraService {
         }
     }
     
-    func activeCamera() -> AVCaptureDevice {
-        return self.activeVideoInput?.device ?? AVCaptureDevice.default(for: .video)!
-    }
-    
     func currentVideoOrientation() -> AVCaptureVideoOrientation {
         var orientation: AVCaptureVideoOrientation
         switch UIDevice.current.orientation {
@@ -482,6 +479,8 @@ extension CameraService {
         }
         return orientation
     }
+    
+    func activeCamera() -> AVCaptureDevice { return self.activeVideoInput!.device }
     
     private func inactiveCamera() -> AVCaptureDevice {
         func cameraWithPosition(_ position: AVCaptureDevice.Position) -> AVCaptureDevice {
@@ -509,15 +508,18 @@ extension CameraService {
     
     private func cameras(for mediaType: AVMediaType?,
                          position: AVCaptureDevice.Position? = .unspecified) -> [AVCaptureDevice] {
-        let deviceTypes: [AVCaptureDevice.DeviceType] = [
-            .builtInMicrophone,
-            .builtInWideAngleCamera,
-            .builtInTelephotoCamera,
-            .builtInDualCamera,
-            .builtInTrueDepthCamera
-        ]
-        return AVCaptureDevice.DiscoverySession(deviceTypes: deviceTypes,
+        //return AVCaptureDevice.devices(for: mediaType!)
+        return AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInWideAngleCamera, .builtInMicrophone],
                                                 mediaType: mediaType,
                                                 position: position!).devices
+    }
+}
+
+extension CameraService {
+    
+    enum CameraServiceError: Swift.Error {
+        case deviceConfigurationFailed
+        case mediaCaptureFailed
+        case unknowError
     }
 }
